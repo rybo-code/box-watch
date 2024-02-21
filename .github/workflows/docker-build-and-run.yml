@@ -1,8 +1,9 @@
 name: Docker Build and Run
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'  # Run every 6 hours
+  workflow-dispatch:
+  # schedule:
+  #   - cron: '0 */6 * * *'  # Run every 6 hours
 
 jobs:
   build:
