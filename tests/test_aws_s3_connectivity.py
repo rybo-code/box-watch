@@ -23,10 +23,9 @@ def test_aws_s3_connectivity(bucket_name):
         print(f"Failed to connect to AWS S3 bucket: {e}")
         return False
 
-
 if __name__ == "__main__":
     # Define the bucket name
-    bucket_name = "your-bucket-name"  # Replace with your bucket name
+    bucket_name = " s3://sentinel-inventory/sentinel-s2-l1c/"  # Replace with your bucket name
 
     # Run the connectivity test
     connectivity_successful = test_aws_s3_connectivity(bucket_name)
