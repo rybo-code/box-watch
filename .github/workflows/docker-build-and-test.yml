@@ -1,0 +1,28 @@
+name: Docker Build and Run
+
+on:
+  push:
+    branches:
+      - main  # or whatever your main branch is called
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Tests
+        run: python test_aws_s3_connectivity.py
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
