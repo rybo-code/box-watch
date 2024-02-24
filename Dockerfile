@@ -7,4 +7,4 @@ COPY src/ app/src/
 COPY tests/ app/tests/
 RUN mkdir /app/aws_data
 
-CMD ["python", "/app/src/download_imagery.py"]
+CMD ["python", "src/download_imagery.py"]
