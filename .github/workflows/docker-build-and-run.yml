@@ -17,10 +17,10 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Build the Docker image
-        run: docker build -t my-python-app .
+        run: docker build -t box-watch .
 
       - name: Run the Docker container
-        run: docker run my-python-app
+        run: docker run box-watch
         env:
-          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          # AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          # AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}

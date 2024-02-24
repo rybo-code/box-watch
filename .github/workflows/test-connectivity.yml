@@ -1,4 +1,4 @@
-name: Docker Build and Test
+name: test-connectivity
 
 on:
   workflow_dispatch:

@@ -5,5 +5,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ .
 COPY tests/ .
+RUN mkdir ./aws_data
 
-CMD ["python", "./src/download-imagery.py"]
+CMD ["python", "./src/download_imagery.py"]
