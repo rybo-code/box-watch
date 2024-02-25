@@ -40,6 +40,7 @@ def download_from_aws_s3(item, asset_name, file_extension):
 
     if file_extension == "jp2":
         image_path_s3 = item.assets[asset_name + "-" + file_extension].href
+        # NOTE jp2 files are currently restricted for public download
     else:
         image_path_s3 = item.assets[asset_name].href
     image_obj = rioxarray.open_rasterio(image_path_s3)
@@ -71,7 +72,7 @@ if __name__ == "__main__":
 
     collections_to_search = ["sentinel-2-l2a"]
     datetime = ["2024-02-20", "2024-02-21"]
-    asset_names = ["AOT"]
+    asset_names = ["thumbnail"]
     stac_items_to_download = search_elemnt84_stac(
         bbox, datetime, collections=collections_to_search
     )
@@ -83,7 +84,7 @@ if __name__ == "__main__":
 
     # NOTE thumbnail.jpg and GeoTiff are available for open download, jpeg200 are not
 
-    for item in tqdm(stac_items_to_download[:1]):
+    for item in tqdm(stac_items_to_download):
         for asset_name in asset_names:
             # Download imagery
             download_from_aws_s3(item, asset_name, file_extension="tif")
