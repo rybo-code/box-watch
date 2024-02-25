@@ -22,9 +22,6 @@ jobs:
       - name: Make data dir
         run: mkdir $GITHUB_WORKSPACE/aws_data
 
-      - name: Make a test file
-        run: touch $GITHUB_WORKSPACE/aws_data/test.txt
-
       - name: Run the Docker container
         run: docker run -v $GITHUB_WORKSPACE/aws_data:/app/aws_data box-watch
         env:
@@ -34,8 +31,11 @@ jobs:
       - name: List files in aws_data directory
         run: ls $GITHUB_WORKSPACE/aws_data
 
+      - name: Print wd
+        run: pwd
+
       - name: Publish Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-images
-          path: $GITHUB_WORKSPACE/aws_data
+          path: $pwd/aws_data
