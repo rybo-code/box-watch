@@ -20,22 +20,22 @@ jobs:
         run: docker build -t box-watch .
 
       - name: Make data dir
-        run: mkdir /github/workspace/aws_data
+        run: mkdir $GITHUB_WORKSPACE/aws_data
 
       - name: Make a test file
-        run: touch /github/workspace/aws_data/test.txt
+        run: touch $GITHUB_WORKSPACE/aws_data/test.txt
 
       - name: Run the Docker container
-        run: docker run -v /github/workspace/aws_data:/app/aws_data box-watch
+        run: docker run -v $GITHUB_WORKSPACE/aws_data:/app/aws_data box-watch
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
       
       - name: List files in aws_data directory
-        run: ls /github/workspace/aws_data
+        run: ls $GITHUB_WORKSPACE/aws_data
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-images
-          path: /github/workspace/aws_data
+          path: $GITHUB_WORKSPACE/aws_data
