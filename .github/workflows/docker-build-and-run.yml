@@ -31,11 +31,8 @@ jobs:
       - name: List files in aws_data directory
         run: ls $GITHUB_WORKSPACE/aws_data
 
-      - name: Print wd
-        run: pwd
-
       - name: Publish Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-images
-          path: $pwd/aws_data
+          path: /home/runner/work/box-watch/box-watch/aws_data
