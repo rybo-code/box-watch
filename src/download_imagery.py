@@ -30,7 +30,7 @@ def search_elemnt84_stac(bbox, datetime, collections=["sentinel-2-l2a"]):
     return item_collection
 
 
-def download_from_aws_s3(item, asset_name, file_extension):
+def download_from_aws_s3(item, asset_name, save_dir, file_extension):
     """
     Save the image to a raster
     """
@@ -50,9 +50,9 @@ def download_from_aws_s3(item, asset_name, file_extension):
     href_filetype = os.path.splitext(image_path_s3)[-1]
     assert href_filetype == "." + file_extension
 
-    # Get Sentinel data structured name for image
-    file_name = item.id + href_filetype
-    file_path = f"./aws_data/{file_name}"
+    # Use Sentinel data structured name (item.id) for image
+    file_name = item.id + "-" + asset_name + href_filetype
+    file_path = save_dir + file_name
 
     # Save images
     image_obj.rio.to_raster(file_path)
@@ -73,6 +73,7 @@ if __name__ == "__main__":
     collections_to_search = ["sentinel-2-l2a"]
     datetime = ["2024-02-20", "2024-02-21"]
     asset_names = ["thumbnail"]
+
     stac_items_to_download = search_elemnt84_stac(
         bbox, datetime, collections=collections_to_search
     )
@@ -84,7 +85,12 @@ if __name__ == "__main__":
 
     # NOTE thumbnail.jpg and GeoTiff are available for open download, jpeg200 are not
 
+    save_dir = "./aws_data/"
+
     for item in tqdm(stac_items_to_download):
         for asset_name in asset_names:
             # Download imagery
-            download_from_aws_s3(item, asset_name, file_extension="jpg")
+            download_from_aws_s3(item, asset_name, save_dir, file_extension="jpg")
+
+    # Check files have been saved
+    logging.info(f"Files saved to {save_dir}: {os.listdir(save_dir)}")
