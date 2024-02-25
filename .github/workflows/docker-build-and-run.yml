@@ -27,9 +27,12 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      
+      - name: List files in aws_data directory
+        run: ls aws_data
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-images
-          path: aws_data
+          path: /github/workspace/aws_data
