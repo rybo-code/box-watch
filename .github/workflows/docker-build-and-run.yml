@@ -26,7 +26,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
 
       - name: Copy aws_data to Workspace
-        run: cp /app/aws_data/* $GITHUB_WORKSPACE/
+        run: cp $(pwd)/aws_data/* $GITHUB_WORKSPACE/
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v2
