@@ -20,16 +20,16 @@ jobs:
         run: docker build -t box-watch .
 
       - name: Run the Docker container
-        run: docker run -v $(pwd)/aws_data:/app/aws_data box-watch
+        run: docker run box-watch
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
 
       - name: Copy files from mounted volume to workspace
-        run: cp -r /app/aws_data/* $GITHUB_WORKSPACE/
+        run: docker cp box-watch:/app/aws_data .
 
       - name: Publish Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: sentinel-images
-          path: $GITHUB_WORKSPACE/
+          path: ./aws_data
