@@ -87,4 +87,4 @@ if __name__ == "__main__":
     for item in tqdm(stac_items_to_download):
         for asset_name in asset_names:
             # Download imagery
-            download_from_aws_s3(item, asset_name, file_extension="tif")
+            download_from_aws_s3(item, asset_name, file_extension="jpg")
