@@ -19,17 +19,17 @@ jobs:
       - name: Build the Docker image
         run: docker build -t box-watch .
 
+      - name: Make data dir
+        run: mkdir aws_data
+
       - name: Run the Docker container
-        run: docker run box-watch
+        run: docker run -v aws_data:/app/aws_data box-watch
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-
-      - name: Copy files from mounted volume to workspace
-        run: docker cp box-watch:/app/aws_data .
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-images
-          path: ./aws_data
+          path: aws_data
