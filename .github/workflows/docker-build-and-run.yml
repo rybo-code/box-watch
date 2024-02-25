@@ -1,4 +1,4 @@
-name: Docker Build and Run
+name: Docker Build, Run, Save Artifacts
 
 on:
   workflow_dispatch:
@@ -20,7 +20,16 @@ jobs:
         run: docker build -t box-watch .
 
       - name: Run the Docker container
-        run: docker run box-watch
+        run: docker run -v $(pwd)/aws-data:/app/aws-data box-watch
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+
+      - name: Copy aws-data to Workspace
+        run: cp /app/aws-data/* $GITHUB_WORKSPACE/
+
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: sentinel-images
+          path: $GITHUB_WORKSPACE/
