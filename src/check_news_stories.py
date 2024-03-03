@@ -1,10 +1,18 @@
 import feedparser
 from datetime import datetime
-from geotext import GeoText
+import string as string_module
+
+# from geotext import GeoText
 from bs4 import BeautifulSoup
 import requests
 import json
 from tqdm import tqdm
+
+# import pandas as pd
+from geonamescache import GeonamesCache
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 def fetch_bbc_news_rss(url, date, limit=None):
@@ -43,17 +51,60 @@ def extract_article_text(url):
     # Extract the text content from divs labeled as data-component="text-block" inside the main-content
     text_blocks = main_content.find_all(
         "div",
-        {"data-component": "text-block", "class": "ssrcss-1q0x1qg-Paragraph e1jhz7w10"},
+        {"data-component": "text-block"},
+    )
+    article_sentences = list()
+    for text_block in text_blocks:
+
+        text = text_block.get_text()
+        article_sentences.append(text)
+
+    return article_sentences
+
+
+def get_geonames_cache():
+
+    # Initialize the GeoNamesCache
+    gc = GeonamesCache()
+
+    cities = gc.get_cities()
+    countries = gc.get_countries_by_names()
+
+    cities_set = set({key: value["name"] for key, value in cities.items()}.values())
+    countries_set = set(
+        {key: value["name"] for key, value in countries.items()}.values()
     )
 
-    # Articles with videos use different text containers
-    # 'ssrcss-1q0x1qg-Paragraph e1jhz7w10'
-    # Extract text from each text block and concatenate with a line break
-    article_text = "\n".join(
-        text_block.get_text(separator=" ", strip=True) for text_block in text_blocks
-    )
+    return cities_set, countries_set
 
-    return article_text
+
+def get_named_geographies(text_sentences: list, cities_ref_set, countries_ref_set):
+    """Requires sentences so we can decide what to do with the first word of a sentence being capitalised in English"""
+    named_cities = list()
+    named_countries = list()
+
+    # Define the translation table to remove punctuation
+
+    for sentence in tqdm(text_sentences):
+        # Remove punctuation using translate method
+        translator = str.maketrans("", "", string_module.punctuation)
+        clean_sentence = sentence.translate(translator)
+        words = clean_sentence.split(" ")
+        # print(words)
+        for word in words[1:]:
+            # Skip first word of sentence
+            if word.istitle():
+                # Check if the word is capitalised
+                logging.info(f"checking word:{word}")
+                if word in countries_ref_set:
+                    named_countries.append(word)
+                    logging.info(f"Country found: {word}")
+
+                elif word in cities_ref_set:
+                    named_cities.append(word)
+                    logging.info(f"City found: {word}")
+
+    return named_cities, named_countries
 
 
 def save_to_json(entries, filename):
@@ -63,43 +114,39 @@ def save_to_json(entries, filename):
 
 def main():
 
+    cities_ref_set, countries_ref_set = get_geonames_cache()
     # URL of the BBC News RSS feed you want to fetch
     bbc_world_news_rss_url = "http://feeds.bbci.co.uk/news/world/rss.xml"
-
-    # BBC RSS feed focused on latest articles, not an archive
     desired_date = datetime.now().date()
-    # desired_date = datetime(year=2024, month=2, day=1).date()
 
-    # Fetch and parse the RSS feed for the desired date
-    print("Fetching RSS feed content")
+    logging.info("Fetching RSS feed content")
+
     bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=None
+        bbc_world_news_rss_url, desired_date, limit=10
     )
 
-    named_cities = set()
-    named_countries = set()
-
-    # Display the title and link of each news article
-    print("Extracting articles")
     for entry in tqdm(bbc_world_news_entries):
-        # print("Title:", entry['title'])
-        # print("Link:", entry['link'])
-        print(entry)
-        article_text = extract_article_text(entry["link"])
-        article_geotext = GeoText(article_text)
-        cities = article_geotext.cities
-        countries = article_geotext.countries
-        entry["named_cities"] = list(set(cities))
-        entry["named_countries"] = list(set(countries))
-        named_countries.update(countries)
-        named_cities.update(cities)
 
-    save_to_json(
-        bbc_world_news_entries,
-        f"./news_stories/{desired_date.strftime('%Y-%m-%d')}_news_entries.json",
-    )
-    print(f"Named Cities: {named_cities}")
-    print(f"Named Countries: {named_countries}")
+        logging.info(f"Title:, {entry['title']}")
+        logging.info(f"Link:, {entry['link']}")
+
+        article_sentences = extract_article_text(entry["link"])
+        # print(article_sentences)
+
+        named_cities, named_countries = get_named_geographies(
+            article_sentences, cities_ref_set, countries_ref_set
+        )
+
+        entry["named_cities"] = sorted(list(set(named_cities)))
+        entry["named_countries"] = sorted(list(set(named_countries)))
+
+        logging.info(f"Named Cities: {named_cities}")
+        logging.info(f"Named Countries: {named_countries}")
+
+        save_to_json(
+            bbc_world_news_entries,
+            f"./news_stories/{desired_date.strftime('%Y-%m-%d')}_news_entries.json",
+        )
 
 
 if __name__ == "__main__":
