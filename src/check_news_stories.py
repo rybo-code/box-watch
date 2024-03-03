@@ -4,15 +4,16 @@ from geotext import GeoText
 from bs4 import BeautifulSoup
 import requests
 import json
+from tqdm import tqdm
 
 
-def fetch_bbc_news_rss(url, date, limit):
+def fetch_bbc_news_rss(url, date, limit=None):
     # Parse the RSS feed
     feed = feedparser.parse(url)
 
     # Extract information from the feed
     entries = []
-    for entry in feed.entries[:limit]:
+    for entry in tqdm(feed.entries[:limit]):
         # print(entry.published)
         entry_date = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %Z")
         if entry_date.date() == date:
@@ -40,8 +41,13 @@ def extract_article_text(url):
     main_content = soup.find(id="main-content")
 
     # Extract the text content from divs labeled as data-component="text-block" inside the main-content
-    text_blocks = main_content.find_all("div", {"data-component": "text-block"})
+    text_blocks = main_content.find_all(
+        "div",
+        {"data-component": "text-block", "class": "ssrcss-1q0x1qg-Paragraph e1jhz7w10"},
+    )
 
+    # Articles with videos use different text containers
+    # 'ssrcss-1q0x1qg-Paragraph e1jhz7w10'
     # Extract text from each text block and concatenate with a line break
     article_text = "\n".join(
         text_block.get_text(separator=" ", strip=True) for text_block in text_blocks
@@ -65,21 +71,26 @@ def main():
     # desired_date = datetime(year=2024, month=2, day=1).date()
 
     # Fetch and parse the RSS feed for the desired date
+    print("Fetching RSS feed content")
     bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=2
+        bbc_world_news_rss_url, desired_date, limit=None
     )
 
     named_cities = set()
     named_countries = set()
 
     # Display the title and link of each news article
-    for entry in bbc_world_news_entries:
+    print("Extracting articles")
+    for entry in tqdm(bbc_world_news_entries):
         # print("Title:", entry['title'])
         # print("Link:", entry['link'])
+        print(entry)
         article_text = extract_article_text(entry["link"])
         article_geotext = GeoText(article_text)
         cities = article_geotext.cities
         countries = article_geotext.countries
+        entry["named_cities"] = list(set(cities))
+        entry["named_countries"] = list(set(countries))
         named_countries.update(countries)
         named_cities.update(cities)
 
