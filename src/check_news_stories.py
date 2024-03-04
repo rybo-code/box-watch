@@ -7,8 +7,7 @@ from bs4 import BeautifulSoup
 import requests
 import json
 from tqdm import tqdm
-
-# import pandas as pd
+import re
 from geonamescache import GeonamesCache
 import logging
 
@@ -78,31 +77,55 @@ def get_geonames_cache():
     return cities_set, countries_set
 
 
+import string as string_module
+
+
+def clean_sentences(text_sentences: list):
+    """
+    Splits sentences into words, removes punctuation, scans for multi-word nouns
+    We are defining nouns as capitalised words other than the first word in a sentence.
+    This is a simplification but applicable for professional publications such as news articles.
+    """
+    translator = str.maketrans("", "", string_module.punctuation)
+    clean_sentences = [s.translate(translator).strip() for s in text_sentences]
+    bag_of_words = list()
+
+    # Search for multi-word nouns
+    multi_word_noun_pattern = r"\b[A-Z][a-z]*(?:\s+[A-Z][a-z]*)+\b"
+
+    for s in clean_sentences:
+        multi_word_nouns = re.findall(multi_word_noun_pattern, s)
+        # Remove the multi word nouns from our sentence
+        left_over_words = re.sub(multi_word_noun_pattern, "", s).strip()
+        # Find any other capitalised words ie. nouns
+        other_nouns = re.findall(r"\b[A-Z][a-z]*\b", left_over_words)
+
+        words = multi_word_nouns + other_nouns
+        bag_of_words += words
+
+    return bag_of_words
+
+
 def get_named_geographies(text_sentences: list, cities_ref_set, countries_ref_set):
     """Requires sentences so we can decide what to do with the first word of a sentence being capitalised in English"""
     named_cities = list()
     named_countries = list()
+    words = clean_sentences(text_sentences)
 
-    # Define the translation table to remove punctuation
+    for word in words:
+        if word.istitle():
+            # Double check if the word is capitalised
+            logging.info(f"checking word:{word}")
+            if word in countries_ref_set:
+                named_countries.append(word)
+                logging.info(f"Country found: {word}")
 
-    for sentence in tqdm(text_sentences):
-        # Remove punctuation using translate method
-        translator = str.maketrans("", "", string_module.punctuation)
-        clean_sentence = sentence.translate(translator)
-        words = clean_sentence.split(" ")
-        # print(words)
-        for word in words[1:]:
-            # Skip first word of sentence
-            if word.istitle():
-                # Check if the word is capitalised
-                logging.info(f"checking word:{word}")
-                if word in countries_ref_set:
-                    named_countries.append(word)
-                    logging.info(f"Country found: {word}")
+            elif word in cities_ref_set:
+                named_cities.append(word)
+                logging.info(f"City found: {word}")
 
-                elif word in cities_ref_set:
-                    named_cities.append(word)
-                    logging.info(f"City found: {word}")
+    # TODO Add a filter for cities, only return if we find another more than one city from the same country,
+    # or mention the country
 
     return named_cities, named_countries
 
