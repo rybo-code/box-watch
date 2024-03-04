@@ -22,7 +22,7 @@ jobs:
         run: mkdir $GITHUB_WORKSPACE/news_stories
 
       - name: Run the Docker container
-        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch ./src/check_news_stories.py
+        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/check_news_stories.py
       
       - name: List files in news_stories directory
         run: ls $GITHUB_WORKSPACE/news_stories
