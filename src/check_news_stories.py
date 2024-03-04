@@ -151,7 +151,8 @@ def save_to_json(entries: list, filename):
     pattern = r"\d+$"  # Takes end digits only
     json_format_entries = {}
 
-    # Extract keys from URLs and create dictionary entries
+    # Extract keys from BBC URLs and create dictionary entries
+    # TODO Generalise method for other RSS news feeds
     for item in entries:
         match = re.search(pattern, item["link"])
         if match:
@@ -172,7 +173,7 @@ def main():
     logging.info("Fetching RSS feed content")
 
     bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=2
+        bbc_world_news_rss_url, desired_date, limit=20
     )
 
     for entry in tqdm(bbc_world_news_entries):
