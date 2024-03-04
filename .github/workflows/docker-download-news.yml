@@ -1,5 +1,4 @@
-name: Docker Build, Run, Save Artifacts
-
+name: Docker Build and Download News
 on:
   workflow_dispatch:
   # schedule:
