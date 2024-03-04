@@ -1,6 +1,7 @@
 import feedparser
 from datetime import datetime
 import string as string_module
+import spacy
 
 # from geotext import GeoText
 from bs4 import BeautifulSoup
@@ -130,14 +131,40 @@ def get_named_geographies(text_sentences: list, cities_ref_set, countries_ref_se
     return named_cities, named_countries
 
 
-def save_to_json(entries, filename):
+def get_named_geographies_spacy(text_sentences: list):
+    """NLP extract GeoPoliticalEntities(GPE) or Locations(LOC) from text sentences"""
+    text = " ".join(text_sentences)
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(text)
+
+    # Extract named entities labeled as geopolitical entities or locations
+    geographical_places = [
+        word.text for word in doc.ents if word.label_ in ["GPE", "LOC"]
+    ]
+
+    return geographical_places
+
+
+def save_to_json(entries: list, filename):
+    """Takes list of dicts, formats and saves"""
+
+    pattern = r"\d+$"  # Takes end digits only
+    json_format_entries = {}
+
+    # Extract keys from URLs and create dictionary entries
+    for item in entries:
+        match = re.search(pattern, item["link"])
+        if match:
+            key = match.group()
+            json_format_entries[key] = item
+
     with open(filename, "w") as f:
-        json.dump(entries, f, indent=4)
+        json.dump(json_format_entries, f, indent=4)
 
 
 def main():
 
-    cities_ref_set, countries_ref_set = get_geonames_cache()
+    # cities_ref_set, countries_ref_set = get_geonames_cache()
     # URL of the BBC News RSS feed you want to fetch
     bbc_world_news_rss_url = "http://feeds.bbci.co.uk/news/world/rss.xml"
     desired_date = datetime.now().date()
@@ -145,7 +172,7 @@ def main():
     logging.info("Fetching RSS feed content")
 
     bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=10
+        bbc_world_news_rss_url, desired_date, limit=2
     )
 
     for entry in tqdm(bbc_world_news_entries):
@@ -156,20 +183,16 @@ def main():
         article_sentences = extract_article_text(entry["link"])
         # print(article_sentences)
 
-        named_cities, named_countries = get_named_geographies(
-            article_sentences, cities_ref_set, countries_ref_set
-        )
+        named_geo_entities = get_named_geographies_spacy(article_sentences)
 
-        entry["named_cities"] = sorted(list(set(named_cities)))
-        entry["named_countries"] = sorted(list(set(named_countries)))
+        entry["named_geo_entities"] = sorted(list(set(named_geo_entities)))
 
-        logging.info(f"Named Cities: {named_cities}")
-        logging.info(f"Named Countries: {named_countries}")
+        logging.info(f"Named Entities: {named_geo_entities}")
 
-        save_to_json(
-            bbc_world_news_entries,
-            f"./news_stories/{desired_date.strftime('%Y-%m-%d')}_news_entries.json",
-        )
+    save_to_json(
+        bbc_world_news_entries,
+        f"./news_stories/{desired_date.strftime('%Y-%m-%d')}_news_entries.json",
+    )
 
 
 if __name__ == "__main__":
