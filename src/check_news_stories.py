@@ -46,18 +46,18 @@ def extract_article_text(url):
     soup = BeautifulSoup(html_content, "html.parser")
 
     # Find the element with the ID "main-content"
-    main_content = soup.find(id="main-content")
+    article = soup.find("article")
 
-    # Extract the text content from divs labeled as data-component="text-block" inside the main-content
-    text_blocks = main_content.find_all(
-        "div",
-        {"data-component": "text-block"},
-    )
-    article_sentences = list()
-    for text_block in text_blocks:
+    # Extract text content from each paragraph element
+    article_sentences = []
 
-        text = text_block.get_text()
-        article_sentences.append(text)
+    for paragraph in article.find_all("p"):
+        paragraph_text = paragraph.get_text()
+        # Ignore the broken media player warning
+        if "This video can not be played" in paragraph_text:
+            continue  # Skip this paragraph
+        else:
+            article_sentences.append(paragraph_text)
 
     return article_sentences
 
