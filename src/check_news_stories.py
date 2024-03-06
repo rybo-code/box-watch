@@ -173,7 +173,7 @@ def main():
     logging.info("Fetching RSS feed content")
 
     bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=20
+        bbc_world_news_rss_url, desired_date, limit=None
     )
 
     for entry in tqdm(bbc_world_news_entries):
