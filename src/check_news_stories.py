@@ -19,7 +19,9 @@ logging.basicConfig(level=logging.INFO)
 def fetch_bbc_news_rss(url, limit=None):
     """Parse the RSS feed and return list of entries with relevant info"""
     feed = feedparser.parse(url)
-    logging.info(f"Found {len(feed.entries)} articles")
+    logging.info(f"Found {len(feed.entries)} available articles.")
+    if limit:
+        logging.info(f"Download limited to {limit} article(s) by user.")
     # Extract information from the feed
     entries = []
     for entry in tqdm(feed.entries[:limit]):
@@ -163,6 +165,8 @@ def save_to_json(entries: list, filename):
     with open(filename, "w") as f:
         json.dump(json_format_entries, f, indent=4)
 
+    logging.info(f"Output saved to {filename}")
+
 
 def main(args):
 
@@ -194,13 +198,12 @@ def main(args):
 
     if args.output:
         filepath = args.output
+        if not filepath.endswith(".json"):
+            filepath = filepath + ".json"
     else:
-        filepath = "./news_stories"
+        filepath = f"./news_stories/{date.strftime('%Y-%m-%d')}_news_entries.json"
 
-    save_to_json(
-        news_articles,
-        f"{filepath}/{date.strftime('%Y-%m-%d')}_news_entries.json",
-    )
+    save_to_json(news_articles, filepath)
 
 
 if __name__ == "__main__":

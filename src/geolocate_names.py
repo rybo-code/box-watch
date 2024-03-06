@@ -5,7 +5,6 @@ from tqdm import tqdm
 import geojson
 import random
 from pathlib import Path
-import matplotlib.pyplot as plt
 import argparse
 
 import logging
@@ -170,7 +169,11 @@ if __name__ == "__main__":
         "-i", "--input", type=str, required=True, help="JSON file of news articles"
     )
     parser.add_argument(
-        "-o", "--output", type=str, default="./geojson", help="Location to save GeoJSON"
+        "-o",
+        "--output",
+        type=str,
+        default="./news_stories",
+        help="Location to save GeoJSON",
     )
     args = parser.parse_args()
 
