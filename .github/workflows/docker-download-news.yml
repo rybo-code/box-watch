@@ -22,10 +22,10 @@ jobs:
         run: mkdir $GITHUB_WORKSPACE/news_stories
 
       - name: Get news stories from RSS feed
-        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/check_news_stories.py -o ./news_stories/data.json
+        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/check_news_stories.py -o ./news_stories/data.json -l 2
       
       - name: Geolocate news stories
-        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/geolocate_names.py -i ./news_stories/data.json 
+        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/geolocate_names.py -i ./news_stories/data.json -o ./news_stories/data_geocoded.json 
       
       - name: List files in news_stories directory
         run: ls $GITHUB_WORKSPACE/news_stories
