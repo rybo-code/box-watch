@@ -2,6 +2,7 @@ import feedparser
 from datetime import datetime
 import string as string_module
 import spacy
+import argparse
 
 # from geotext import GeoText
 from bs4 import BeautifulSoup
@@ -163,7 +164,7 @@ def save_to_json(entries: list, filename):
         json.dump(json_format_entries, f, indent=4)
 
 
-def main():
+def main(article_limit):
 
     # cities_ref_set, countries_ref_set = get_geonames_cache()
     # URL of the BBC News RSS feed you want to fetch
@@ -173,7 +174,7 @@ def main():
     logging.info("Fetching RSS feed content")
 
     bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=None
+        bbc_world_news_rss_url, desired_date, limit=article_limit
     )
 
     for entry in tqdm(bbc_world_news_entries):
@@ -197,4 +198,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(
+        description="Extract news article from BBC RSS feed"
+    )
+    parser.add_argument(
+        "article_limit", type=int, help="Max num articles to return from RSS feed"
+    )
+    args = parser.parse_args()
+
+    main(args.article_limit)

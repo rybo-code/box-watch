@@ -6,6 +6,7 @@ import geojson
 import random
 from pathlib import Path
 import matplotlib.pyplot as plt
+import argparse
 
 import logging
 
@@ -134,26 +135,10 @@ def generate_random_colors(num_colors):
     return colors
 
 
-# def add_colors_to_json(json_data):
-
-#     num_articles = len(json_data)
-#     colors = generate_random_colors(num_articles)
-#     logging.info(f"Found {num_articles} articles to color with {colors}.")
-
-#     for article_id in tqdm(json_data):
-#         color = colors.pop()
-#         logging.info(f"Color for {article_id}:{color}")
-#         for place in json_data[article_id]["named_geo_entities"]:
-#             json_data[article_id]["named_geo_entities"][place]["marker-color"] = color
-#     logging.info("Colors applied.")
-
-#     return json_data
-
-
-def main():
+def main(json_file):
 
     # Open the news stories JSON
-    file_path = Path("news_stories/2024-03-05_news_entries.json")
+    file_path = Path(json_file)
 
     geocoded_json = locate_place_names(file_path)
     # geocoded_json_colored = add_colors_to_json(geocoded_json)
@@ -167,4 +152,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(description="Geolocate places in news stories")
+    parser.add_argument(
+        "json_file", type=str, help="JSON file containing articles to geolocate"
+    )
+    args = parser.parse_args()
+
+    main(args.json_file)
