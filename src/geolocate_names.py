@@ -64,6 +64,11 @@ def locate_place_names(json_file):
     with open(json_file, "r") as f:
         data = json.load(f)
 
+    if len(data) > 0:
+        pass
+    else:
+        logging.warning(f"No data found in {json_file}")
+        return None
     # Iterate over each place name in the JSON file
     entity_coords_dict = dict()
 
@@ -115,12 +120,17 @@ def convert_to_geojson(json_data):
             features.append(feature)
         feature_collections.append(geojson.FeatureCollection(features))
 
-    # Merge features into single
-    merged_features = []
+    if len(feature_collections) > 0:
 
-    for feature_collection in feature_collections:
-        merged_features.extend(feature_collection["features"])
-        merged_feature_collection = geojson.FeatureCollection(merged_features)
+        # Merge features into single
+        merged_features = []
+
+        for feature_collection in feature_collections:
+            merged_features.extend(feature_collection["features"])
+            merged_feature_collection = geojson.FeatureCollection(merged_features)
+    else:
+        logging.warning("No locations found in data.")
+        merged_feature_collection = None
 
     return merged_feature_collection
 
@@ -135,28 +145,33 @@ def generate_random_colors(num_colors):
     return colors
 
 
-def main(json_file):
+def main(args):
 
     # Open the news stories JSON
-    file_path = Path(json_file)
+    file_path = Path(args.input)
 
     geocoded_json = locate_place_names(file_path)
-    # geocoded_json_colored = add_colors_to_json(geocoded_json)
-    geojson_data = convert_to_geojson(geocoded_json)
+    if geocoded_json:
+        geojson_data = convert_to_geojson(geocoded_json)
 
-    # Extract the filename without extension
-    new_filename = "./geojson/" + file_path.stem + "_geocoded.json"
+        # Extract the filename without extension
+        new_filename = args.output + file_path.stem + "_geocoded.json"
 
-    with open(new_filename, "w") as f:
-        json.dump(geojson_data, f, indent=4)
+        with open(new_filename, "w") as f:
+            json.dump(geojson_data, f, indent=4)
+    else:
+        logging.warning("No data to geocode, please check inputs.")
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Geolocate places in news stories")
     parser.add_argument(
-        "json_file", type=str, help="JSON file containing articles to geolocate"
+        "-i", "--input", type=str, required=True, help="JSON file of news articles"
+    )
+    parser.add_argument(
+        "-o", "--output", type=str, default="./geojson", help="Location to save GeoJSON"
     )
     args = parser.parse_args()
 
-    main(args.json_file)
+    main(args)
