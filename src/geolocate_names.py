@@ -101,7 +101,7 @@ def convert_to_geojson(json_data):
     for article_id, entry in json_data.items():
         features = []
         marker_color = colors.pop()  # Color article locations all same
-        logging.info(f"Color for {article_id}:{marker_color}")
+        # logging.info(f"Color for {article_id}:{marker_color}")
         for location, details in entry["named_geo_entities"].items():
             latitude = details["latitude"]
             longitude = details["longitude"]
@@ -162,6 +162,8 @@ def main(args):
 
         with open(file_path_out, "w") as f:
             json.dump(geojson_data, f, indent=4)
+            logging.info(f"Output saved to {file_path_out}")
+            logging.info("Done.")
     else:
         logging.warning("No data to geocode, please check inputs.")
 

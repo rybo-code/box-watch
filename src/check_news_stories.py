@@ -180,28 +180,32 @@ def main(args):
 
     news_articles = fetch_bbc_news_rss(rss_url, limit=args.limit)
     # Evaluate each news article in turn
-    for article in tqdm(news_articles):
+    if news_articles:
+        for article in tqdm(news_articles):
+            logging.info(f"Title:, {article['title']}")
+            logging.info(f"Link:, {article['link']}")
 
-        logging.info(f"Title:, {article['title']}")
-        logging.info(f"Link:, {article['link']}")
+            article_sentences = extract_article_text(article["link"])
+            # Find possible geographic locations mentioned in the articles
+            named_geo_entities = get_named_geographies_spacy(article_sentences)
 
-        article_sentences = extract_article_text(article["link"])
-        # Find possible geographic locations mentioned in the articles
-        named_geo_entities = get_named_geographies_spacy(article_sentences)
+            # Add locations to news_articles dict
+            article["named_geo_entities"] = sorted(list(set(named_geo_entities)))
 
-        # Add locations to news_articles dict
-        article["named_geo_entities"] = sorted(list(set(named_geo_entities)))
+            logging.info(f"Named Entities: {named_geo_entities}")
 
-        logging.info(f"Named Entities: {named_geo_entities}")
+        if args.output:
+            filepath = args.output
+            if not filepath.endswith(".json"):
+                filepath = filepath + ".json"
+        else:
+            filepath = f"./news_stories/{date.strftime('%Y-%m-%d')}_news_entries.json"
 
-    if args.output:
-        filepath = args.output
-        if not filepath.endswith(".json"):
-            filepath = filepath + ".json"
+        save_to_json(news_articles, filepath)
+        logging.info("Done.")
+
     else:
-        filepath = f"./news_stories/{date.strftime('%Y-%m-%d')}_news_entries.json"
-
-    save_to_json(news_articles, filepath)
+        logging.warning(f"RSS feed parsing failed.")
 
 
 if __name__ == "__main__":
