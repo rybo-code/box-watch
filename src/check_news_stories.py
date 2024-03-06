@@ -2,6 +2,7 @@ import feedparser
 from datetime import datetime
 import string as string_module
 import spacy
+import argparse
 
 # from geotext import GeoText
 from bs4 import BeautifulSoup
@@ -15,23 +16,22 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 
-def fetch_bbc_news_rss(url, date, limit=None):
-    # Parse the RSS feed
+def fetch_bbc_news_rss(url, limit=None):
+    """Parse the RSS feed and return list of entries with relevant info"""
     feed = feedparser.parse(url)
-
+    logging.info(f"Found {len(feed.entries)} available articles.")
+    if limit:
+        logging.info(f"Download limited to {limit} article(s) by user.")
     # Extract information from the feed
     entries = []
     for entry in tqdm(feed.entries[:limit]):
-        # print(entry.published)
-        entry_date = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %Z")
-        if entry_date.date() == date:
-            entry_info = {
-                "title": entry.title,
-                "link": entry.link,
-                "published": entry.published,
-                "summary": entry.summary,
-            }
-            entries.append(entry_info)
+        entry_info = {
+            "title": entry.title,
+            "link": entry.link,
+            "published": entry.published,
+            "summary": entry.summary,
+        }
+        entries.append(entry_info)
 
     return entries
 
@@ -46,18 +46,18 @@ def extract_article_text(url):
     soup = BeautifulSoup(html_content, "html.parser")
 
     # Find the element with the ID "main-content"
-    main_content = soup.find(id="main-content")
+    article = soup.find("article")
 
-    # Extract the text content from divs labeled as data-component="text-block" inside the main-content
-    text_blocks = main_content.find_all(
-        "div",
-        {"data-component": "text-block"},
-    )
-    article_sentences = list()
-    for text_block in text_blocks:
+    # Extract text content from each paragraph element
+    article_sentences = []
 
-        text = text_block.get_text()
-        article_sentences.append(text)
+    for paragraph in article.find_all("p"):
+        paragraph_text = paragraph.get_text()
+        # Ignore the broken media player warning
+        if "This video can not be played" in paragraph_text:
+            continue  # Skip this paragraph
+        else:
+            article_sentences.append(paragraph_text)
 
     return article_sentences
 
@@ -76,9 +76,6 @@ def get_geonames_cache():
     )
 
     return cities_set, countries_set
-
-
-import string as string_module
 
 
 def clean_sentences(text_sentences: list):
@@ -146,12 +143,17 @@ def get_named_geographies_spacy(text_sentences: list):
 
 
 def save_to_json(entries: list, filename):
-    """Takes list of dicts, formats and saves"""
+    """
+    Identify BBC format ID for articles from url link
+    eg. for https://www.bbc.co.uk/news/world-middle-east-68458902, ID = 68458902
+    Use ID to as key for  each article in JSON format
+    """
 
     pattern = r"\d+$"  # Takes end digits only
     json_format_entries = {}
 
-    # Extract keys from URLs and create dictionary entries
+    # Extract keys from BBC URLs and create dictionary entries
+    # TODO Generalise method for other RSS news feeds
     for item in entries:
         match = re.search(pattern, item["link"])
         if match:
@@ -161,39 +163,67 @@ def save_to_json(entries: list, filename):
     with open(filename, "w") as f:
         json.dump(json_format_entries, f, indent=4)
 
+    logging.info(f"Output saved to {filename}")
 
-def main():
 
-    # cities_ref_set, countries_ref_set = get_geonames_cache()
-    # URL of the BBC News RSS feed you want to fetch
-    bbc_world_news_rss_url = "http://feeds.bbci.co.uk/news/world/rss.xml"
-    desired_date = datetime.now().date()
+def main(args):
 
-    logging.info("Fetching RSS feed content")
+    # URL of the BBC News RSS feed to fetch
+    rss_url = "http://feeds.bbci.co.uk/news/world/rss.xml"
 
-    bbc_world_news_entries = fetch_bbc_news_rss(
-        bbc_world_news_rss_url, desired_date, limit=2
-    )
+    if args.date == None:
+        date = datetime.now().date()
+    else:
+        date = datetime.fromisoformat(args.date)
 
-    for entry in tqdm(bbc_world_news_entries):
+    logging.info(f"Fetching RSS feed content from {rss_url} for {date}.")
 
-        logging.info(f"Title:, {entry['title']}")
-        logging.info(f"Link:, {entry['link']}")
+    news_articles = fetch_bbc_news_rss(rss_url, limit=args.limit)
+    # Evaluate each news article in turn
+    if news_articles:
+        for article in tqdm(news_articles):
+            logging.info(f"Title:, {article['title']}")
+            logging.info(f"Link:, {article['link']}")
 
-        article_sentences = extract_article_text(entry["link"])
-        # print(article_sentences)
+            article_sentences = extract_article_text(article["link"])
+            # Find possible geographic locations mentioned in the articles
+            named_geo_entities = get_named_geographies_spacy(article_sentences)
 
-        named_geo_entities = get_named_geographies_spacy(article_sentences)
+            # Add locations to news_articles dict
+            article["named_geo_entities"] = sorted(list(set(named_geo_entities)))
 
-        entry["named_geo_entities"] = sorted(list(set(named_geo_entities)))
+            logging.info(f"Named Entities: {named_geo_entities}")
 
-        logging.info(f"Named Entities: {named_geo_entities}")
+        if args.output:
+            filepath = args.output
+            if not filepath.endswith(".json"):
+                filepath = filepath + ".json"
+        else:
+            filepath = f"./news_stories/{date.strftime('%Y-%m-%d')}_news_entries.json"
 
-    save_to_json(
-        bbc_world_news_entries,
-        f"./news_stories/{desired_date.strftime('%Y-%m-%d')}_news_entries.json",
-    )
+        save_to_json(news_articles, filepath)
+        logging.info("Done.")
+
+    else:
+        logging.warning(f"RSS feed parsing failed.")
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser(
+        description="Extract news article from BBC RSS feed"
+    )
+
+    parser.add_argument(
+        "-l", "--limit", type=int, default=None, help="Max num articles to return"
+    )
+    parser.add_argument(
+        "-o", "--output", type=str, default=None, help="Location to output json file"
+    )
+    parser.add_argument(
+        "-d", "--date", type=str, default=None, help="YYYY-MM-DD for articles"
+    )
+
+    args = parser.parse_args()
+
+    main(args)
