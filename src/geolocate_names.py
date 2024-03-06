@@ -147,16 +147,20 @@ def generate_random_colors(num_colors):
 def main(args):
 
     # Open the news stories JSON
-    file_path = Path(args.input)
+    file_path_in = Path(args.input)
 
-    geocoded_json = locate_place_names(file_path)
+    geocoded_json = locate_place_names(file_path_in)
     if geocoded_json:
         geojson_data = convert_to_geojson(geocoded_json)
+        if args.output:
+            file_path_out = args.output
+            if not file_path_out.endswith(".json"):
+                file_path_out = file_path_out + ".json"
+                # Extract the filename without extension
+        else:
+            file_path_out = file_path_in.stem + "_geocoded.json"
 
-        # Extract the filename without extension
-        new_filename = args.output + file_path.stem + "_geocoded.json"
-
-        with open(new_filename, "w") as f:
+        with open(file_path_out, "w") as f:
             json.dump(geojson_data, f, indent=4)
     else:
         logging.warning("No data to geocode, please check inputs.")
@@ -172,7 +176,7 @@ if __name__ == "__main__":
         "-o",
         "--output",
         type=str,
-        default="./news_stories",
+        default=None,
         help="Location to save GeoJSON",
     )
     args = parser.parse_args()

@@ -25,8 +25,6 @@ def fetch_bbc_news_rss(url, limit=None):
     # Extract information from the feed
     entries = []
     for entry in tqdm(feed.entries[:limit]):
-        # print(entry.published)
-        # entry_date = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %Z")
         entry_info = {
             "title": entry.title,
             "link": entry.link,
