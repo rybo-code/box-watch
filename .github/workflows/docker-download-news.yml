@@ -22,13 +22,25 @@ jobs:
         run: mkdir $GITHUB_WORKSPACE/news_stories
 
       - name: Get news stories from RSS feed
-        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/check_news_stories.py -o ./news_stories/data.json
+        run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/check_news_stories.py -o ./news_stories/data.json -l 2
       
       - name: Geolocate news stories
         run: docker run -v $GITHUB_WORKSPACE/news_stories:/app/news_stories box-watch python ./src/geolocate_names.py -i ./news_stories/data.json -o ./news_stories/data_geocoded.json 
       
       - name: List files in news_stories directory
         run: ls $GITHUB_WORKSPACE/news_stories
+
+      - name: Add GeoJSON file
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add $GITHUB_WORKSPACE/news_stories/data_geocoded.json
+          git commit -m "Add generated GeoJSON file"
+      
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v4
