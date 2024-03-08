@@ -19,21 +19,25 @@ logging.basicConfig(level=logging.INFO)
 def fetch_bbc_news_rss(url, limit=None):
     """Parse the RSS feed and return list of entries with relevant info"""
     feed = feedparser.parse(url)
-    logging.info(f"Found {len(feed.entries)} available articles.")
-    if limit:
-        logging.info(f"Download limited to {limit} article(s) by user.")
-    # Extract information from the feed
-    entries = []
-    for entry in tqdm(feed.entries[:limit]):
-        entry_info = {
-            "title": entry.title,
-            "link": entry.link,
-            "published": entry.published,
-            "summary": entry.summary,
-        }
-        entries.append(entry_info)
 
-    return entries
+    if feed:
+        logging.info(f"Found {len(feed.entries)} available articles.")
+        if limit:
+            logging.info(f"Download limited to {limit} article(s) by user.")
+        # Extract information from the feed
+        entries = []
+        for entry in tqdm(feed.entries[:limit]):
+            entry_info = {
+                "title": entry.title,
+                "link": entry.link,
+                "published": entry.published,
+                "summary": entry.summary,
+            }
+            entries.append(entry_info)
+
+        return entries
+    else:
+        return None
 
 
 def extract_article_text(url):
