@@ -10,9 +10,9 @@ Run from Github action:
 
 
 Run locally:
-'docker build -t box-watch .'
-'docker run box-watch python ./src/check_news_stories.py -o ./data.json'
-'docker run box-watch python ./src/geolocate_names.py -i ./data.json -o ./data_geocoded.json 
+`docker build -t box-watch .`
+`docker run box-watch python ./src/check_news_stories.py -o ./data.json`
+`docker run box-watch python ./src/geolocate_names.py -i ./data.json -o ./data_geocoded.json`
 
 ### Description
 
