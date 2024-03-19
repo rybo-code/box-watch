@@ -13,14 +13,13 @@
   <div id="map"></div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Initialize map
     var map = L.map('map').setView([51.505, -0.09], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
     // Fetch GeoJSON data
-    fetch('C:/Users/Ryan/Documents/GitHub/box-watch/geojson/data_geocoded.json')
+    fetch('geojson/data_geocoded.json')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -28,8 +27,6 @@
             return response.json();
         })
         .then(data => {
-            console.log('GeoJSON data:', data); // Log GeoJSON data to console for debugging
-            // Process GeoJSON data and add to map
             L.geoJSON(data).addTo(map);
         })
         .catch(error => console.error('Error fetching or processing data:', error));

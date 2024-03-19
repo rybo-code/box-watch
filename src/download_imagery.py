@@ -3,6 +3,7 @@ import rioxarray
 import logging
 from tqdm import tqdm
 import os
+import argparse
 
 
 # Ignore lack of georeference for image thumbnails
@@ -14,11 +15,13 @@ def search_elemnt84_stac(bbox, datetime, collections=["sentinel-2-l2a"]):
     Identify the sentinel image file to download from AWS using the Element 84 STAC database
 
     param :collections: List of satellite imagery STACs to look for. Use "sentinel-2-l2a" or "sentinel-s1-l1c"
+    param :datetime: string, list or tuple containing datetime or a daterange eg. "2024-02-21". See pystac docs for full details
+    param :bbox: List of lat/lon coords top-left, bottom-right of bounding box
     """
 
     client = Client.open("https://earth-search.aws.element84.com/v1")
 
-    # Searching the sentinel-cogs location directly doesn't work for some reason
+    # Searching the sentinel-cogs location directly doesn't work
     # client = Client.open('https://sentinel-cogs.s3.us-west-2.amazonaws.com')
 
     search = client.search(
@@ -32,7 +35,12 @@ def search_elemnt84_stac(bbox, datetime, collections=["sentinel-2-l2a"]):
 
 def download_from_aws_s3(item, asset_name, save_dir, file_extension):
     """
-    Save the image to a raster
+    Save the image to a raster.
+
+    param :item: pystac.client item returned from in STAC format
+    param :asset_name: String of Sentinel asset type eg. TCI (True Color Image). See sentinel docs for full list.
+    param :save_dir: Directory to save the images to
+    param :file_extension: String of file format for image to download, can be "tiff" or "jpg"
     """
     # TODO Add comments etc
 
@@ -61,7 +69,7 @@ def download_from_aws_s3(item, asset_name, save_dir, file_extension):
     return
 
 
-if __name__ == "__main__":
+def main(args):
 
     bbox = [
         30.696510174036007,
@@ -83,7 +91,7 @@ if __name__ == "__main__":
     )
     logging.info(f"Assets available: {stac_items_to_download[0].assets.keys()}")
 
-    # NOTE thumbnail.jpg and GeoTiff are available for open download, jpeg200 are not
+    # NOTE thumbnail.jpg and GeoTiff are available for open download, jpeg2000 are not
 
     save_dir = "./aws_data/"
 
@@ -94,3 +102,27 @@ if __name__ == "__main__":
 
     # Check files have been saved
     logging.info(f"Files saved to {save_dir}: {os.listdir(save_dir)}")
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(
+        description="Extract news article from BBC RSS feed"
+    )
+
+    parser.add_argument(
+        "-s", "--source", type=int, default=None, help="Max num articles to return"
+    )
+    parser.add_argument(
+        "-a",
+        "--assets",
+        type=list,
+        default=["thumbnail"],
+        help="Asset types to download",
+    )
+    parser.add_argument(
+        "-d", "--date", type=str, default=None, help="YYYY-MM-DD for articles"
+    )
+
+    args = parser.parse_args()
+    main(args)
