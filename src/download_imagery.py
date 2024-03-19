@@ -4,6 +4,7 @@ import logging
 from tqdm import tqdm
 import os
 import argparse
+from geopy import Point, distance
 
 
 # Ignore lack of georeference for image thumbnails
@@ -33,7 +34,7 @@ def search_elemnt84_stac(bbox, datetime, collections=["sentinel-2-l2a"]):
     return item_collection
 
 
-def download_from_aws_s3(item, asset_name, save_dir, file_extension):
+def download_from_aws_s3(item, asset_name, save_dir, file_extension, bbox=None):
     """
     Save the image to a raster.
 
@@ -62,6 +63,11 @@ def download_from_aws_s3(item, asset_name, save_dir, file_extension):
     file_name = item.id + "-" + asset_name + href_filetype
     file_path = save_dir + file_name
 
+    # TODO Implement image clipping
+    if bbox:
+        # image_obj = image_obj.rio.clip_box()
+        pass
+
     # Save images
     image_obj.rio.to_raster(file_path)
     logging.info(f"Saved image to {file_path}.")
@@ -69,25 +75,40 @@ def download_from_aws_s3(item, asset_name, save_dir, file_extension):
     return
 
 
-def main(args):
+def create_bounding_box(lat, lon, distance_km):
+    center_point = Point(lat, lon)
 
-    bbox = [
-        30.696510174036007,
-        46.265163784414824,
-        30.555737616687253,
-        46.35892215257451,
+    # Calculate the coordinates of the points approximately 5 km north and south of the center
+    ne_point = distance.distance(kilometers=distance_km).destination(
+        center_point, 45
+    )  # 45 degrees is northeast
+    sw_point = distance.distance(kilometers=distance_km).destination(
+        center_point, 225
+    )  # 225 degrees is southwest
+
+    center_point
+
+    return [
+        sw_point.latitude,
+        sw_point.longitude,
+        ne_point.latitude,
+        ne_point.longitude,
     ]
 
-    collections_to_search = ["sentinel-2-l2a"]
-    datetime = ["2024-02-20", "2024-02-21"]
-    asset_names = ["thumbnail"]
+
+def main(args):
+
+    bbox = create_bounding_box(args.lat, args.lon, distance_km=args.extents)
+    logging.info(
+        f"Extracting satellite imagery at coords:{args.lat, args.lon} for date/daterange {args.date}."
+    )
 
     stac_items_to_download = search_elemnt84_stac(
-        bbox, datetime, collections=collections_to_search
+        bbox, args.date, collections=args.source
     )
 
     logging.info(
-        f"{len(stac_items_to_download)} items found in {collections_to_search} collections for date/daterange {datetime}."
+        f"{len(stac_items_to_download)} items found in {args.source} collections."
     )
     logging.info(f"Assets available: {stac_items_to_download[0].assets.keys()}")
 
@@ -96,7 +117,7 @@ def main(args):
     save_dir = "./aws_data/"
 
     for item in tqdm(stac_items_to_download):
-        for asset_name in asset_names:
+        for asset_name in args.assets:
             # Download imagery
             download_from_aws_s3(item, asset_name, save_dir, file_extension="jpg")
 
@@ -111,7 +132,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-s", "--source", type=int, default=None, help="Max num articles to return"
+        "-s",
+        "--source",
+        type=str,
+        default="sentinel-2-l2a",
+        help="'sentinel-2-l2a' or 'sentinel-s1-l1c'",
     )
     parser.add_argument(
         "-a",
@@ -121,7 +146,33 @@ if __name__ == "__main__":
         help="Asset types to download",
     )
     parser.add_argument(
-        "-d", "--date", type=str, default=None, help="YYYY-MM-DD for articles"
+        "-d",
+        "--date",
+        type=str,
+        default=None,
+        required=True,
+        help="YYYY-MM-DD date to extract nearest imagery",
+    )
+    parser.add_argument(
+        "-lat",
+        type=float,
+        default=None,
+        required=True,
+        help="Latitude to extract satellite image",
+    )
+    parser.add_argument(
+        "-lon",
+        type=float,
+        default=None,
+        required=True,
+        help="Longitude to extract satellite image",
+    )
+    parser.add_argument(
+        "-e",
+        "--extents",
+        type=int,
+        default=5,
+        help="Size of desired bounding box in km",
     )
 
     args = parser.parse_args()
